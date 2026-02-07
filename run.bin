@@ -1,0 +1,2 @@
+cd dist/
+java -jar app-1.0-SNAPSHOT.jar
