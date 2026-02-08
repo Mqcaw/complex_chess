@@ -1,5 +1,6 @@
 package me.jdfunk.app;
 
+import me.jdfunk.api.log.Logger;
 import me.jdfunk.app.config.Config;
 
 import javax.swing.*;
@@ -8,18 +9,18 @@ public class Window {
     private JPanel windowPanel;
     private Scene scene;
     private static JFrame frame;
+    private static final Logger logger = Main.getLogger();
 
     public Window() {
         try {
             createAndShowUI();
         } catch (Exception e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(null, "Failed to start the app: " + e.getMessage());
+            logger.error("Failed to start the window", e);
         }
     }
 
     private void createAndShowUI() throws Exception {
-        System.out.println("Loading UI...");
+        logger.trace("createAndShowUI(), starting UI");
         frame = new JFrame(Config.TITLE);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -28,9 +29,9 @@ public class Window {
 
         this.windowPanel = new JPanel();
         this.windowPanel.setLayout(new BoxLayout(this.windowPanel, BoxLayout.X_AXIS));
-        System.out.println("Creating scene...");
+        logger.trace("Creating scene");
         this.scene = new Scene();
-        System.out.println("Scene created.");
+        logger.info("Scene created");
 
         windowPanel.add(scene);
         frame.add(windowPanel);
@@ -38,16 +39,16 @@ public class Window {
 
         this.addKeyBindings();
 
-        System.out.println("Starting scene thread...");
+        logger.trace("Starting scene thread");
         this.scene.start();
-        System.out.println("Scene thread started.");
+        logger.info("Scene thread started");
 
         frame.pack();
         frame.setVisible(true);
         frame.setResizable(true);
 
         //WindowManager.registerFrame(frame, scene);
-        System.out.println("UI loaded.");
+        logger.info("UI loaded");
     }
 
     /*

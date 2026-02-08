@@ -1,5 +1,6 @@
 package me.jdfunk.app;
 
+import me.jdfunk.api.log.Logger;
 import me.jdfunk.app.config.Config;
 import me.jdfunk.app.render.GameRenderer;
 import me.jdfunk.app.render.Java2DRenderer;
@@ -16,13 +17,21 @@ public class Scene extends JPanel implements Runnable{
     private Thread gameThread;
     private boolean isRunning = false;
 
+    private static final Logger logger = Main.getLogger();
+
     //private int size = Config.getBoardSizeInPixels();
     private int size = Config.BOARD_SIZE_IN_PIXELS;
 
+    //TODO: Scene.java which sets up swing repainting on a separate thread clashes with the engine:
+    //this used to be the original 'game loop' which handled rendering and update calls,
+    //should this be moved to engine? probably not
+    //is engine already on a separate thread? do we now have three threads in use? do we want that?
+    //we sill need a game loop, because the engine only controls logic, so it makes sense to keep this.
+    //this will need to be cleaned up a bit tho.
     public Scene() throws Exception {
         //let swing use double buffering
         this.setDoubleBuffered(true);
-        // we are using a game loop to repaint, so we don't want swing randomly doing it for us
+        //we are using a game loop to repaint, so we don't want swing randomly doing it for us
         this.setIgnoreRepaint(true);
 
         initSwingMouseEvents();
@@ -41,7 +50,7 @@ public class Scene extends JPanel implements Runnable{
         try {
             gameThread.join();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            logger.error("Error while joining game-loop", e);
         }
     }
 
@@ -54,7 +63,11 @@ public class Scene extends JPanel implements Runnable{
         while (isRunning) {
             update();
             repaint();
-            try { Thread.sleep(2); } catch (InterruptedException e) { e.printStackTrace(); }
+            try {
+                Thread.sleep(2);
+            } catch (InterruptedException e) {
+                logger.error("Error while sleeping", e);
+            }
         }
     }
 
