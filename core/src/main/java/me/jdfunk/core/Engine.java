@@ -2,31 +2,53 @@ package me.jdfunk.core;
 
 import me.jdfunk.api.IEngine;
 import me.jdfunk.api.annotations.EventHandler;
-import me.jdfunk.api.event.*;
+import me.jdfunk.api.event.EventBus;
+import me.jdfunk.api.event.Subscription;
+import me.jdfunk.api.event.domain.EngineStartEvent;
 import me.jdfunk.api.event.domain.EngineStopEvent;
 import me.jdfunk.api.log.Logger;
-import me.jdfunk.api.event.domain.EngineStartEvent;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Engine implements IEngine {
     private static final Logger logger = Logger.getLogger(Engine.class);
-    private EventBus eventBus;
-    private static boolean running = false;
+
+    private final EventBus eventBus;
+    private final AtomicBoolean running = new AtomicBoolean(false);
 
     public Engine() {
         eventBus = new EventBus();
         eventBus.register(this);
-        logger.info("Engine initialized and listening for events");
+        logger.info("Engine initialized");
+    }
+
+    @Override
+    public void start(EventBus appEventBus) {
+        if (!running.compareAndSet(false, true)) {
+            logger.warn("Engine.start() called, but engine is already running");
+            return;
+        }
+        eventBus.publish(new EngineStartEvent());
+    }
+
+    @Override
+    public void stop(boolean suppressWarning) {
+        if (!running.compareAndSet(true, false)) {
+            logger.warn("Engine.stop() called, but engine is not running");
+            return;
+        }
+        eventBus.publish(new EngineStopEvent(suppressWarning));
     }
 
     @EventHandler
     public void onEngineStart(EngineStartEvent event) {
-        running = true;
         logger.info("Engine started");
     }
 
     @EventHandler
     public void onEngineStop(EngineStopEvent event) {
-        running = false;
         if (event.isSuppressWarning()) {
             logger.info("Engine stopped.");
         } else {
@@ -36,7 +58,7 @@ public class Engine implements IEngine {
 
     @Override
     public boolean isRunning() {
-        return running;
+        return running.get();
     }
 
     @Override
@@ -47,5 +69,4 @@ public class Engine implements IEngine {
     public static Logger getLogger() {
         return logger;
     }
-
 }

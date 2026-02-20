@@ -1,38 +1,61 @@
 package me.jdfunk.app;
 
-import me.jdfunk.api.annotations.DomainEvent;
-import me.jdfunk.api.event.*;
+import me.jdfunk.api.event.Event;
+import me.jdfunk.api.event.EventBus;
 import me.jdfunk.api.event.Subscription;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class AppEventBridge {
-    private final EventBus apiEventBus; //The shared API EventBus
+/**
+ * Bridges events between the Engine bus and the App bus.
+ *
+ * Recommended default: Engine -> App for domain events only.
+ * (This avoids feedback loops unless you explicitly add an App -> Engine bridge too.)
+ */
+public final class AppEventBridge implements AutoCloseable {
+    private final EventBus engineBus;
+    private final EventBus appBus;
     private final List<Subscription> subscriptions = new ArrayList<>();
 
-    public AppEventBridge(EventBus apiEventBus) {
-        this.apiEventBus = apiEventBus;
+    public AppEventBridge(EventBus engineBus, EventBus appBus) {
+        this.engineBus = engineBus;
+        this.appBus = appBus;
     }
 
-    //Subscribe to all domain events from the Engine
-    public void subscribeToEngineDomainEvents(EventBus appEventBus) {
-        // Subscribe to the base Event class but filter for domain events
-        subscriptions.add(apiEventBus.subscribeToDomainEvent(Event.class, event -> {
-            // Only forward events marked with @DomainEvent
-            if (event.getClass().isAnnotationPresent(DomainEvent.class)) {
-                appEventBus.publish(event);
-            }
-        }));
+    /**
+     * Forward Engine domain events to the App bus.
+     *
+     * This relies on EventBus.publish() delivering events to subscribers of Event.class.
+     */
+    public void bridgeEngineDomainEventsToApp() {
+        subscriptions.add(engineBus.subscribeToDomainEvent(Event.class, appBus::publish));
     }
 
-    //Publish events to Engine
-    public void publish(Event event) {
-        apiEventBus.publish(event);
+    /**
+     * Optional: forward *all* events App->Engine (not domain-filtered).
+     * Only enable this if you need it, and be careful about loops.
+     */
+    public void bridgeAllAppEventsToEngine() {
+        subscriptions.add(appBus.subscribeToEvent(Event.class, engineBus::publish));
     }
 
-    //Cleanup
-    public void shutdown() {
+    /**
+     * Convenience: publish to engine side (commands, requests, etc.)
+     */
+    public void publishToEngine(Event event) {
+        engineBus.publish(event);
+    }
+
+    /**
+     * Convenience: publish to app side (UI notifications, etc.)
+     */
+    public void publishToApp(Event event) {
+        appBus.publish(event);
+    }
+
+    @Override
+    public void close() {
         subscriptions.forEach(Subscription::unsubscribe);
         subscriptions.clear();
     }

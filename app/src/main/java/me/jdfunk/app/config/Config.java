@@ -2,9 +2,9 @@ package me.jdfunk.app.config;
 
 import java.awt.*;
 
-//TODO: make a config loader
+//TODO: make a config loader to load from external resource files
 public class Config {
-    public static final String TITLE = "Chess";
+    public static final String TITLE = "Chess App";
     public static final int BOARD_SIZE_IN_SQUARES = 8;
     public static final int BOARD_TILE_SIZE_IN_PIXELS = 96;
     public static final int BOARD_SIZE_IN_PIXELS = BOARD_SIZE_IN_SQUARES * BOARD_TILE_SIZE_IN_PIXELS;
